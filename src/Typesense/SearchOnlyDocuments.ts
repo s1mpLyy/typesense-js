@@ -54,7 +54,7 @@ export class SearchOnlyDocuments<T extends DocumentSchema>
   protected async interceptSearchQuery(query: string): Promise<string> {
     try {
       const response = await this.makeApiRequest<{ processed: string; original: string }>(query);
-      return response.processed;
+      return response.processed ?? query; // Fallback to original query if processed is not available
     } catch (error) {
       // If the API call fails, return the original query
       console.error('Error processing query:', error);
@@ -77,7 +77,7 @@ export class SearchOnlyDocuments<T extends DocumentSchema>
 
     // Intercept and modify the query if it exists
     if (searchParameters.q) {
-      searchParameters.q = await this.interceptSearchQuery(searchParameters.q);
+      searchParameters.q = await this.interceptSearchQuery(searchParameters.q) ;
     }
 
     const { streamConfig, ...rest } = normalizeArrayableParams<
