@@ -4507,15 +4507,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _RequestWithCache__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./RequestWithCache */ "./src/Typesense/RequestWithCache.ts");
 /* harmony import */ var _Collections__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./Collections */ "./src/Typesense/Collections.ts");
 /* harmony import */ var _Utils__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./Utils */ "./src/Typesense/Utils.ts");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
 
 
 
 
 
 var _excluded = ["streamConfig"];
-
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_4__["default"])(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+
+
 
 
 
@@ -4534,9 +4536,81 @@ var SearchOnlyDocuments = /*#__PURE__*/function () {
       this.requestWithCache.clearCache();
     }
   }, {
+    key: "makeApiRequest",
+    value: function () {
+      var _makeApiRequest = (0,_babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1__["default"])( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_5___default().mark(function _callee(query) {
+        var response;
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_5___default().wrap(function _callee$(_context) {
+          while (1) switch (_context.prev = _context.next) {
+            case 0:
+              _context.prev = 0;
+              console.log("[Typesense] Making API request to Lambda with query:", query);
+              _context.next = 4;
+              return axios__WEBPACK_IMPORTED_MODULE_9__["default"].post("https://arhhm5omsof3nkzctfctb5fcl40wdiya.lambda-url.eu-central-1.on.aws", {
+                text: query
+              }, {
+                headers: {
+                  "Content-Type": "application/json"
+                }
+              });
+            case 4:
+              response = _context.sent;
+              console.log("[Typesense] API response:", response.data);
+              return _context.abrupt("return", response.data);
+            case 9:
+              _context.prev = 9;
+              _context.t0 = _context["catch"](0);
+              console.error("[Typesense] API request failed:", _context.t0);
+              throw _context.t0;
+            case 13:
+            case "end":
+              return _context.stop();
+          }
+        }, _callee, null, [[0, 9]]);
+      }));
+      function makeApiRequest(_x) {
+        return _makeApiRequest.apply(this, arguments);
+      }
+      return makeApiRequest;
+    }()
+  }, {
+    key: "interceptSearchQuery",
+    value: function () {
+      var _interceptSearchQuery = (0,_babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1__["default"])( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_5___default().mark(function _callee2(query) {
+        var _response$processed, response, processedQuery;
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_5___default().wrap(function _callee2$(_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
+            case 0:
+              _context2.prev = 0;
+              console.log("[Typesense] Intercepting query:", query);
+              _context2.next = 4;
+              return this.makeApiRequest(query);
+            case 4:
+              response = _context2.sent;
+              processedQuery = (_response$processed = response.processed) !== null && _response$processed !== void 0 ? _response$processed : query;
+              console.log("[Typesense] Using processed query:", processedQuery);
+              return _context2.abrupt("return", processedQuery);
+            case 10:
+              _context2.prev = 10;
+              _context2.t0 = _context2["catch"](0);
+              // If the API call fails, return the original query
+              console.error("[Typesense] Error processing query, using original:", _context2.t0);
+              return _context2.abrupt("return", query);
+            case 14:
+            case "end":
+              return _context2.stop();
+          }
+        }, _callee2, this, [[0, 10]]);
+      }));
+      function interceptSearchQuery(_x2) {
+        return _interceptSearchQuery.apply(this, arguments);
+      }
+      return interceptSearchQuery;
+    }()
+  }, {
     key: "search",
     value: function () {
-      var _search = (0,_babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1__["default"])( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_5___default().mark(function _callee(searchParameters) {
+      var _search = (0,_babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1__["default"])( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_5___default().mark(function _callee3(searchParameters) {
         var _ref,
           _ref$cacheSearchResul,
           cacheSearchResultsForSeconds,
@@ -4548,19 +4622,30 @@ var SearchOnlyDocuments = /*#__PURE__*/function () {
           rest,
           queryParams,
           isStreamingRequest,
-          _args = arguments;
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_5___default().wrap(function _callee$(_context) {
-          while (1) switch (_context.prev = _context.next) {
+          _args3 = arguments;
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_5___default().wrap(function _callee3$(_context3) {
+          while (1) switch (_context3.prev = _context3.next) {
             case 0:
-              _ref = _args.length > 1 && _args[1] !== undefined ? _args[1] : {}, _ref$cacheSearchResul = _ref.cacheSearchResultsForSeconds, cacheSearchResultsForSeconds = _ref$cacheSearchResul === void 0 ? this.configuration.cacheSearchResultsForSeconds : _ref$cacheSearchResul, _ref$abortSignal = _ref.abortSignal, abortSignal = _ref$abortSignal === void 0 ? null : _ref$abortSignal;
+              _ref = _args3.length > 1 && _args3[1] !== undefined ? _args3[1] : {}, _ref$cacheSearchResul = _ref.cacheSearchResultsForSeconds, cacheSearchResultsForSeconds = _ref$cacheSearchResul === void 0 ? this.configuration.cacheSearchResultsForSeconds : _ref$cacheSearchResul, _ref$abortSignal = _ref.abortSignal, abortSignal = _ref$abortSignal === void 0 ? null : _ref$abortSignal;
               additionalQueryParams = {};
               if (this.configuration.useServerSideSearchCache === true) {
                 additionalQueryParams["use_cache"] = true;
               }
+
+              // Intercept and modify the query if it exists
+              if (!searchParameters.q) {
+                _context3.next = 7;
+                break;
+              }
+              _context3.next = 6;
+              return this.interceptSearchQuery(searchParameters.q);
+            case 6:
+              searchParameters.q = _context3.sent;
+            case 7:
               _normalizeArrayablePa = (0,_Utils__WEBPACK_IMPORTED_MODULE_8__.normalizeArrayableParams)(searchParameters), streamConfig = _normalizeArrayablePa.streamConfig, rest = (0,_babel_runtime_helpers_objectWithoutProperties__WEBPACK_IMPORTED_MODULE_0__["default"])(_normalizeArrayablePa, _excluded);
               queryParams = _objectSpread(_objectSpread({}, additionalQueryParams), rest);
               isStreamingRequest = queryParams.conversation_stream === true;
-              return _context.abrupt("return", this.requestWithCache.perform(this.apiCall, "get", {
+              return _context3.abrupt("return", this.requestWithCache.perform(this.apiCall, "get", {
                 path: this.endpointPath("search"),
                 queryParams: queryParams,
                 streamConfig: streamConfig,
@@ -4569,13 +4654,13 @@ var SearchOnlyDocuments = /*#__PURE__*/function () {
               }, {
                 cacheResponseForSeconds: cacheSearchResultsForSeconds
               }));
-            case 7:
+            case 11:
             case "end":
-              return _context.stop();
+              return _context3.stop();
           }
-        }, _callee, this);
+        }, _callee3, this);
       }));
-      function search(_x) {
+      function search(_x3) {
         return _search.apply(this, arguments);
       }
       return search;

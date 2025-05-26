@@ -10,6 +10,8 @@ export declare class SearchOnlyDocuments<T extends DocumentSchema> implements Se
     protected requestWithCache: RequestWithCache;
     constructor(collectionName: string, apiCall: ApiCall, configuration: Configuration);
     clearCache(): void;
+    protected makeApiRequest<T>(query: string): Promise<T>;
+    protected interceptSearchQuery(query: string): Promise<string>;
     search(searchParameters: SearchParams<T> | SearchParamsWithPreset<T>, { cacheSearchResultsForSeconds, abortSignal, }?: SearchOptions): Promise<SearchResponse<T>>;
     protected endpointPath(operation?: string): string;
     static get RESOURCEPATH(): string;

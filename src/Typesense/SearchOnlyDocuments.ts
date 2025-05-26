@@ -10,6 +10,7 @@ import type {
 } from "./Documents";
 import { normalizeArrayableParams } from "./Utils";
 import { SearchableDocuments, SearchParams } from "./Types";
+import axios from "axios";
 
 const RESOURCEPATH = "/documents";
 
@@ -30,34 +31,45 @@ export class SearchOnlyDocuments<T extends DocumentSchema>
 
   protected async makeApiRequest<T>(query: string): Promise<T> {
     try {
-      const requestConfig = {
-        path: "https://arhhm5omsof3nkzctfctb5fcl40wdiya.lambda-url.eu-central-1.on.aws",
-        body: {
-          text: query
-        },
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      };
-
-      return await this.apiCall.post<T>(
-        requestConfig.path,
-        requestConfig.body,
-        {},
-        requestConfig.headers
+      console.log(
+        "[Typesense] Making API request to Lambda with query:",
+        query,
       );
+      const response = await axios.post<T>(
+        "https://arhhm5omsof3nkzctfctb5fcl40wdiya.lambda-url.eu-central-1.on.aws",
+        {
+          text: query,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      console.log("[Typesense] API response:", response.data);
+      return response.data;
     } catch (error) {
+      console.error("[Typesense] API request failed:", error);
       throw error;
     }
   }
 
   protected async interceptSearchQuery(query: string): Promise<string> {
     try {
-      const response = await this.makeApiRequest<{ processed: string; original: string }>(query);
-      return response.processed ?? query; // Fallback to original query if processed is not available
+      console.log("[Typesense] Intercepting query:", query);
+      const response = await this.makeApiRequest<{
+        processed: string;
+        original: string;
+      }>(query);
+      const processedQuery = response.processed ?? query;
+      console.log("[Typesense] Using processed query:", processedQuery);
+      return processedQuery;
     } catch (error) {
       // If the API call fails, return the original query
-      console.error('Error processing query:', error);
+      console.error(
+        "[Typesense] Error processing query, using original:",
+        error,
+      );
       return query;
     }
   }
@@ -77,7 +89,7 @@ export class SearchOnlyDocuments<T extends DocumentSchema>
 
     // Intercept and modify the query if it exists
     if (searchParameters.q) {
-      searchParameters.q = await this.interceptSearchQuery(searchParameters.q) ;
+      searchParameters.q = await this.interceptSearchQuery(searchParameters.q);
     }
 
     const { streamConfig, ...rest } = normalizeArrayableParams<
