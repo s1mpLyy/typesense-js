@@ -44,12 +44,13 @@ export class SearchOnlyDocuments<T extends DocumentSchema>
           headers: {
             "Content-Type": "application/json",
           },
+          timeout: 5000, // 5 second timeout for production
         },
       );
       console.log("[Typesense] API response:", response.data);
       return response.data;
-    } catch (error) {
-      console.error("[Typesense] API request failed:", error);
+    } catch (error: any) {
+      console.error("[Typesense] API request failed:", error.message);
       throw error;
     }
   }
@@ -57,6 +58,13 @@ export class SearchOnlyDocuments<T extends DocumentSchema>
   protected async interceptSearchQuery(query: string): Promise<string> {
     try {
       console.log("[Typesense] Intercepting query:", query);
+
+      // Skip processing for very short queries or empty queries
+      if (!query || query.trim().length < 2) {
+        console.log("[Typesense] Skipping processing for short query");
+        return query;
+      }
+
       const response = await this.makeApiRequest<{
         processed: string;
         original: string;
@@ -64,11 +72,11 @@ export class SearchOnlyDocuments<T extends DocumentSchema>
       const processedQuery = response.processed ?? query;
       console.log("[Typesense] Using processed query:", processedQuery);
       return processedQuery;
-    } catch (error) {
-      // If the API call fails, return the original query
+    } catch (error: any) {
+      // Production-ready fallback: always return original query on error
       console.error(
         "[Typesense] Error processing query, using original:",
-        error,
+        error.message,
       );
       return query;
     }
@@ -89,7 +97,11 @@ export class SearchOnlyDocuments<T extends DocumentSchema>
 
     // Intercept and modify the query if it exists
     if (searchParameters.q) {
+      const originalQuery = searchParameters.q;
       searchParameters.q = await this.interceptSearchQuery(searchParameters.q);
+      console.log(
+        `[Typesense] Query transformation: "${originalQuery}" → "${searchParameters.q}"`,
+      );
     }
 
     const { streamConfig, ...rest } = normalizeArrayableParams<
@@ -101,6 +113,11 @@ export class SearchOnlyDocuments<T extends DocumentSchema>
       ...additionalQueryParams,
       ...rest,
     };
+
+    console.log(
+      "[Typesense] Final search parameters being sent to Typesense:",
+      queryParams,
+    );
 
     const isStreamingRequest = queryParams.conversation_stream === true;
 

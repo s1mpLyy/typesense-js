@@ -4551,7 +4551,8 @@ var SearchOnlyDocuments = /*#__PURE__*/function () {
               }, {
                 headers: {
                   "Content-Type": "application/json"
-                }
+                },
+                timeout: 5000 // 5 second timeout for production
               });
             case 4:
               response = _context.sent;
@@ -4560,7 +4561,7 @@ var SearchOnlyDocuments = /*#__PURE__*/function () {
             case 9:
               _context.prev = 9;
               _context.t0 = _context["catch"](0);
-              console.error("[Typesense] API request failed:", _context.t0);
+              console.error("[Typesense] API request failed:", _context.t0.message);
               throw _context.t0;
             case 13:
             case "end":
@@ -4583,24 +4584,33 @@ var SearchOnlyDocuments = /*#__PURE__*/function () {
             case 0:
               _context2.prev = 0;
               console.log("[Typesense] Intercepting query:", query);
-              _context2.next = 4;
+
+              // Skip processing for very short queries or empty queries
+              if (!(!query || query.trim().length < 2)) {
+                _context2.next = 5;
+                break;
+              }
+              console.log("[Typesense] Skipping processing for short query");
+              return _context2.abrupt("return", query);
+            case 5:
+              _context2.next = 7;
               return this.makeApiRequest(query);
-            case 4:
+            case 7:
               response = _context2.sent;
               processedQuery = (_response$processed = response.processed) !== null && _response$processed !== void 0 ? _response$processed : query;
               console.log("[Typesense] Using processed query:", processedQuery);
               return _context2.abrupt("return", processedQuery);
-            case 10:
-              _context2.prev = 10;
+            case 13:
+              _context2.prev = 13;
               _context2.t0 = _context2["catch"](0);
-              // If the API call fails, return the original query
-              console.error("[Typesense] Error processing query, using original:", _context2.t0);
+              // Production-ready fallback: always return original query on error
+              console.error("[Typesense] Error processing query, using original:", _context2.t0.message);
               return _context2.abrupt("return", query);
-            case 14:
+            case 17:
             case "end":
               return _context2.stop();
           }
-        }, _callee2, this, [[0, 10]]);
+        }, _callee2, this, [[0, 13]]);
       }));
       function interceptSearchQuery(_x2) {
         return _interceptSearchQuery.apply(this, arguments);
@@ -4617,6 +4627,7 @@ var SearchOnlyDocuments = /*#__PURE__*/function () {
           _ref$abortSignal,
           abortSignal,
           additionalQueryParams,
+          originalQuery,
           _normalizeArrayablePa,
           streamConfig,
           rest,
@@ -4634,16 +4645,19 @@ var SearchOnlyDocuments = /*#__PURE__*/function () {
 
               // Intercept and modify the query if it exists
               if (!searchParameters.q) {
-                _context3.next = 7;
+                _context3.next = 9;
                 break;
               }
-              _context3.next = 6;
+              originalQuery = searchParameters.q;
+              _context3.next = 7;
               return this.interceptSearchQuery(searchParameters.q);
-            case 6:
-              searchParameters.q = _context3.sent;
             case 7:
+              searchParameters.q = _context3.sent;
+              console.log("[Typesense] Query transformation: \"".concat(originalQuery, "\" \u2192 \"").concat(searchParameters.q, "\""));
+            case 9:
               _normalizeArrayablePa = (0,_Utils__WEBPACK_IMPORTED_MODULE_8__.normalizeArrayableParams)(searchParameters), streamConfig = _normalizeArrayablePa.streamConfig, rest = (0,_babel_runtime_helpers_objectWithoutProperties__WEBPACK_IMPORTED_MODULE_0__["default"])(_normalizeArrayablePa, _excluded);
               queryParams = _objectSpread(_objectSpread({}, additionalQueryParams), rest);
+              console.log("[Typesense] Final search parameters being sent to Typesense:", queryParams);
               isStreamingRequest = queryParams.conversation_stream === true;
               return _context3.abrupt("return", this.requestWithCache.perform(this.apiCall, "get", {
                 path: this.endpointPath("search"),
@@ -4654,7 +4668,7 @@ var SearchOnlyDocuments = /*#__PURE__*/function () {
               }, {
                 cacheResponseForSeconds: cacheSearchResultsForSeconds
               }));
-            case 11:
+            case 14:
             case "end":
               return _context3.stop();
           }
